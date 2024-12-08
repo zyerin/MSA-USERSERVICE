@@ -1,11 +1,13 @@
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - master
 
-
 jobs:
   MY-DEPLOY-JOB:
+    if: github.event.pull_request.merged == true # 병합된 경우만 실행
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,7 +22,7 @@ jobs:
           mkdir ./src/main/resources || true
           cd ./src/main/resources
           rm -rf ./application.properties || true
-          echo "${{ secrets.APPLICATION_PROPERTIES }}" | base64 --decode  > ./application.properties
+          echo "${{ secrets.APPLICATION_PROPERTIES }}" | base64 --decode  > ./application.yml
         shell: bash
 
       - name: Build with Gradle
@@ -31,28 +33,28 @@ jobs:
       - name: Docker build & push to docker repo
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/${{secrets.DOCKER_REPOSITORY}}:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/${{secrets.DOCKER_REPOSITORY}}:userservice .
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:userservice
 
-      - name: Create config directory on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: |
-            mkdir -p /home/ubuntu/config
-            cd /home/ubuntu/config
-            sudo docker-compose down || true
-
-      - name: Copy docker-compose.yml to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "/home/ubuntu/config/"
+#      - name: Create config directory on EC2
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.EC2_PRIVATE_KEY }}
+#          script: |
+#            mkdir -p /home/ubuntu/config
+#            cd /home/ubuntu/config
+#            sudo docker-compose down || true
+#
+#      - name: Copy docker-compose.yml to EC2
+#        uses: appleboy/scp-action@v0.1.7
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.EC2_PRIVATE_KEY }}
+#          source: "docker-compose.yml"
+#          target: "/home/ubuntu/config/"
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
@@ -64,7 +66,8 @@ jobs:
           script: |
             echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
             sudo docker rm -f $(docker ps -qa) || true  
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:userservice
             cd /home/ubuntu/config
+            sudo docker-compose down || true
             sudo docker-compose up -d
             sudo docker image prune -f
