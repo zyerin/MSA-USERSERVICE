@@ -33,17 +33,17 @@ public class MemberController {
     }
 
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signup(@RequestBody SignUpDto signUpDto){
+    public ResponseEntity<Map<String, String>> signup(@RequestBody SignUpDto signUpDto){
         String username = signUpDto.getUsername();
         String password = signUpDto.getPassword();
-        ResponseEntity<?>result = memberService.signUp(username,password);
+        ResponseEntity<Map<String, String>> result = memberService.signUp(username,password);
         log.info("회원가입 결과 :"+result);
         return result;
     }
 
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> signIn(@RequestBody SignInDto signInDto) {
+    public ResponseEntity<Map<String, String>> signIn(@RequestBody SignInDto signInDto) {
         String username = signInDto.getUsername();
         String password = signInDto.getPassword();
 
@@ -107,6 +107,5 @@ public class MemberController {
         }else {
             return ResponseEntity.status(401).build();
         }
-
     }
 }
