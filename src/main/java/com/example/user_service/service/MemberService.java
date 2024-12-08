@@ -28,7 +28,7 @@ public class MemberService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
 
     @Transactional
-    public ResponseEntity<?> signUp(String username, String password) {
+    public ResponseEntity<Map<String, String>> signUp(String username, String password) {
         try {
             Optional<Member> user = memberRepository.findByUsername(username);
 
