@@ -55,7 +55,7 @@ public class MemberService {
 
             // 4. 성공 응답
             Map<String, String> response = new HashMap<>();
-            response.put("message", "Sign up successful!!!!!!!!!!!");
+            response.put("message", "Sign up successful");
             return ResponseEntity.status(HttpStatus.OK).body(response); // 200 OK
         } catch (Exception e) {
             // 5. 서버 에러 처리
