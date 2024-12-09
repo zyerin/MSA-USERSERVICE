@@ -66,9 +66,8 @@ jobs:
           script_stop: true
           script: |
             echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-            sudo docker rm -f $(docker ps -qa) || true  
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:userservice
             cd /home/ubuntu/config
-            sudo docker-compose down || true
-            sudo docker-compose up -d
+            sudo docker-compose rm -fs user-service
+            sudo docker-compose up -d user-service
             sudo docker image prune -f
