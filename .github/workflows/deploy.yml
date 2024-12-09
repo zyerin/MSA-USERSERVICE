@@ -5,6 +5,7 @@ on:
     branches:
       - main
 
+
 jobs:
   MY-DEPLOY-JOB:
     if: github.event.pull_request.merged == true # 병합된 경우만 실행
