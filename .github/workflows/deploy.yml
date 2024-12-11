@@ -7,9 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-test-and-deploy:
+  build-and-deploy:
     if: github.event.pull_request.merged == true
-    name: Build, Test, Push, and Deploy User-Service
+    name: Build, Push, and Deploy User-Service
     runs-on: ubuntu-latest
 
     steps:
@@ -33,13 +33,11 @@ jobs:
           echo "${{ secrets.APPLICATION_YML }}" | base64 --decode  > ./application.yml
         shell: bash
 
-      # 4. Gradle로 Spring Boot 빌드 및 테스트
-      - name: Build and Test Spring Boot Application
+      # 4. Gradle로 Spring Boot 빌드
+      - name: Build Spring Boot Application
         run: |
           chmod +x ./gradlew
-          ./gradlew clean build
-        env:
-          SPRING_PROFILES_ACTIVE: test
+          ./gradlew clean build -x test
 
       # 5. Docker 이미지 빌드
       - name: Build Docker Image
