@@ -24,19 +24,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. application.yml 생성
+      # 3-1. application.yml 생성
       - name: Create application.yml
         run: |
           mkdir ./src/main/resources || true
           cd ./src/main/resources
-          rm -rf ./application.properties || true
+          rm -rf ./application.yml || true
           echo "${{ secrets.APPLICATION_YML }}" | base64 --decode > ./application.yml
+        shell: bash
+
+      # 3-2. test application.yml 생성
+      - name: Create application.yml
+        run: |
+          mkdir ./src/test/resources || true
+          cd ./src/test/resources
+          rm -rf ./application.yml || true
+          echo "${{ secrets.APPLICATION_YML_TEST }}" | base64 --decode > ./application.yml
         shell: bash
 
       # 4. Gradle로 Spring Boot 빌드
       - name: Build Spring Boot Application
         run: |
           chmod +x ./gradlew
+          ./gradlew test
           ./gradlew clean build -x test
 
       # 5. Docker 이미지 빌드
@@ -70,21 +80,17 @@ jobs:
             
             echo "Starting Rolling Deployment for user-service..."
             
-            # 복제본 수 설정
-            REPLICAS=2
+            # 1. 첫 번째 복제본 업데이트 (2번 복제본 유지)
+            echo "Updating the first replica..."
+            docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=1
+            docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
+            sleep 10 # 대기 시간 (필요에 따라 조정)
+            echo "First replica updated."
   
-            for i in $(seq 1 $REPLICAS)
-            do
-              echo "Updating replica $i..."
-              
-              # 복제본 수 조정
-              docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=$i
-              
-              # 업데이트
-              docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
-              
-              echo "Replica $i updated."
-            done
-  
-            echo "Rolling Deployment completed successfully."
+            # 2. 두 번째 복제본 업데이트 (1번 복제본 유지)
+            echo "Updating the second replica..."
+            docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=2
+            docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
+            sleep 10 # 대기 시간 (필요에 따라 조정)
+            echo "Second replica updated."
 
