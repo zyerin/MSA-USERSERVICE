@@ -1,6 +1,5 @@
 name: CI/CD for User-Service
 
-# 동작 조건 설정 : main 브랜치에 push 혹은 pull request가 발생할 경우 동작
 on:
   pull_request:
     types:
@@ -8,9 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
+  build-test-and-deploy:
     if: github.event.pull_request.merged == true
-    name: Build, Push, and Deploy User-Service
+    name: Build, Test, Push, and Deploy User-Service
     runs-on: ubuntu-latest
 
     steps:
@@ -31,14 +30,16 @@ jobs:
           mkdir ./src/main/resources || true
           cd ./src/main/resources
           rm -rf ./application.properties || true
-          echo "${{ secrets.APPLICATION_PROPERTIES }}" | base64 --decode  > ./application.yml
+          echo "${{ secrets.APPLICATION_YML }}" | base64 --decode  > ./application.yml
         shell: bash
 
-      # 4. Gradle로 Spring Boot 빌드
-      - name: Build Spring Boot Application
+      # 4. Gradle로 Spring Boot 빌드 및 테스트
+      - name: Build and Test Spring Boot Application
         run: |
           chmod +x ./gradlew
-          ./gradlew clean build -x test
+          ./gradlew clean build
+        env:
+          SPRING_PROFILES_ACTIVE: test
 
       # 5. Docker 이미지 빌드
       - name: Build Docker Image
@@ -55,27 +56,33 @@ jobs:
       - name: Push Docker Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
 
-      # 8. 배포 자동화: DockerHub에서 이미지 가져와 EC2에서 배포
-      - name: Deploy to EC2
+      # 8. Rolling 배포
+      - name: Rolling Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            echo "Pulling latest user-service image from DockerHub..."
+            echo "Starting Rolling Deploy for user-service..."
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             
-            # 최신 user-service 이미지 가져오기
+            # 최신 이미지 가져오기
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
             
-            echo "Restarting user-service containers..."
+            # 기존 컨테이너를 하나씩 종료하고 새로운 컨테이너를 실행
+            services=$(docker-compose ps -q user-service)
+            for service in $services; do
+              echo "Stopping container: $service"
+              docker stop $service
+              docker rm $service
             
-            # user-service 컨테이너 삭제
-            docker-compose -f /home/ubuntu/docker-compose.yml rm -fs user-service
+              echo "Starting new container with latest image..."
+              docker-compose -f /home/ubuntu/docker-compose.yml up -d --scale user-service=1 user-service
             
-            # user-service 컨테이너만 다시 실행
-            docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
-            # docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service | grep -i "error"
+              # 상태 확인 및 대기
+              echo "Waiting for user-service to be healthy..."
+              sleep 15  # 서비스가 준비될 때까지 대기
+            done
             
-            echo "user-service successfully deployed."
+            echo "Rolling Deploy completed for user-service."
