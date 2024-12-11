@@ -27,7 +27,7 @@ jobs:
           rm -rf ./application.yml || true
           echo "${{ secrets.APPLICATION_PROPERTIES }}" | base64 --decode  > ./application.yml
           
-          cd ./src/test/resources
+          cd ../../test/resources
           rm -rf ./application.yml || true
           echo "${{ secrets.TEST_APPLICATION_PROPERTIES }}" | base64 --decode  > ./application.yml
         shell: bash
