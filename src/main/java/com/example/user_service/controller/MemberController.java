@@ -46,6 +46,7 @@ public class MemberController {
     public ResponseEntity<Map<String, String>> signIn(@RequestBody SignInDto signInDto) {
         String username = signInDto.getUsername();
         String password = signInDto.getPassword();
+        String fcmtoken = signInDto.getFcmtoken();
 
         Authentication authentication = memberService.signIn(username, password);
         log.info("request username = {}, password = {}", username, password);
@@ -54,9 +55,9 @@ public class MemberController {
         Map<String, String> responseBody = new HashMap<>();
         //로그인 성공시 생성된 사용자 고유번호와 이름을 레디스에 저장해야함.
         if(authentication.isAuthenticated()){
-            RedisMember saved = redisMemberService.save(new RedisMember(customUserDetails.getIdx(), authentication.getName()));
+            RedisMember saved = redisMemberService.save(new RedisMember(customUserDetails.getIdx(), authentication.getName(),fcmtoken));
             //레디스에 저장된 데이터의 id를 반환. 이제 이것을 토큰에 담아줄 예정.
-            log.info("인증성공. idx: "+saved.getIdx()+ "name: "+saved.getUsername());
+            log.info("인증성공. idx: "+saved.getIdx()+ "name: "+saved.getUsername()+"fcmToken: "+fcmtoken );
 
             responseBody.put("redisKey", saved.getId());
             return ResponseEntity.ok(responseBody);
@@ -108,4 +109,15 @@ public class MemberController {
             return ResponseEntity.status(401).build();
         }
     }
+    @GetMapping("/auth/idx/{idx}")
+    public ResponseEntity<RedisMember> getAuthByMemberIdx(@PathVariable("idx") String idx){//아직도 get으로하면 405
+        log.info("getAuthByMemberIdx 요청옴!");
+        Optional<RedisMember> found = redisMemberService.findByIdx(idx);
+        if(found.isPresent()){
+            return ResponseEntity.ok(found.get());
+        }else {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
 }

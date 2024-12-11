@@ -26,6 +26,12 @@ jobs:
           echo "${{ secrets.APPLICATION_PROPERTIES }}" | base64 --decode  > ./application.yml
         shell: bash
 
+      - name: Run tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test
+
+
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
