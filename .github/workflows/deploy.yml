@@ -70,16 +70,21 @@ jobs:
             
             echo "Starting Rolling Deployment for user-service..."
             
-            # 1. 첫 번째 복제본 중단 및 업데이트
-            echo "Updating the first replica..."
-            docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=1
-            docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
-            echo "First replica updated."
-            
-            # 2. 두 번째 복제본 중단 및 업데이트
-            echo "Updating the second replica..."
-            docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=2
-            docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
-            echo "Second replica updated."
-            
+            # 복제본 수 설정
+            REPLICAS=2
+  
+            for i in $(seq 1 $REPLICAS)
+            do
+              echo "Updating replica $i..."
+              
+              # 복제본 수 조정
+              docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=$i
+              
+              # 업데이트
+              docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
+              
+              echo "Replica $i updated."
+            done
+  
             echo "Rolling Deployment completed successfully."
+
