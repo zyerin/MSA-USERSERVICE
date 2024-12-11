@@ -19,4 +19,9 @@ public class RedisMemberService {
     public Optional<RedisMember> findById(String id){
         return redisMemberRepository.findById(id);
     }
+
+    public Optional<RedisMember> findByIdx(String idx){
+        return redisMemberRepository.findByIdx(idx);
+    }
+
 }

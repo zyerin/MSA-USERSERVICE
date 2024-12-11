@@ -94,8 +94,9 @@ class MemberControllerTest {
         SignInDto signInDto = new SignInDto();
         signInDto.setUsername("kjh");
         signInDto.setPassword("1234");
+        signInDto.setFcmtoken("kjh");
 
-        RedisMember redisMember = new RedisMember("asdfd-3123hu-321j3bj-13123","1","kjh");
+        RedisMember redisMember = new RedisMember("asdfd-3123hu-321j3bj-13123","1","kjh","fcmToken");
 
         Authentication mockAuthentication = Mockito.mock(Authentication.class);
         CustomUserDetails customUserDetails = new CustomUserDetails("1","kjh","1234", new ArrayList<>());
@@ -122,7 +123,7 @@ class MemberControllerTest {
     @DisplayName("get Auth 성공")
     void getAuthSuccess() throws Exception {
         //given
-        RedisMember redisMember = new RedisMember("asdfd-3123hu-321j3bj-13123","1","kjh");
+        RedisMember redisMember = new RedisMember("asdfd-3123hu-321j3bj-13123","1","kjh","fcmToken");
         Mockito.when(redisMemberService.findById(any(String.class))).thenReturn(Optional.of(redisMember));
         //when
         ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders.get("/members/auth/{id}",redisMember.getId())
