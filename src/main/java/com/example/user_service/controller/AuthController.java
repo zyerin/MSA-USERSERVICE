@@ -19,6 +19,7 @@ public class AuthController {
     private final MemberService memberService;
     private final AuthService authService;
 
+
     /*
     // Redis 에 해당 idx 유저가 있는지 검증
     @GetMapping("/{idx}")
