@@ -65,39 +65,6 @@ public class MemberController {
         return ResponseEntity.badRequest().body(responseBody);
     }
 
-    /*
-    @GetMapping("/get-username/{idx}")
-    public ResponseEntity<String> getUsername(@PathVariable String idx) {
-        try {
-            // RedisTestService를 호출하여 특정 필드 조회
-            String username = authService.getUsernameFromRedis(idx);
-            if (username != null) {
-                return ResponseEntity.ok(username);
-            } else {
-                return ResponseEntity.status(404).body("Username not found in Redis");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/get-username")
-    public ResponseEntity<String> getUsernameFromHeader(@RequestHeader("X-User-Sub") String idx) {
-        try {
-            log.info("Header: {}", idx);
-            String username = authService.getUsernameFromRedis(idx);
-            if (username != null) {
-                return ResponseEntity.ok(username);
-            } else {
-                return ResponseEntity.status(404).body("Username not found in Redis");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
-        }
-    }
-
-
-     */
 
     @GetMapping("/auth/{id}")
     public ResponseEntity<RedisMember> getAuth(@PathVariable("id") String id){//아직도 get으로하면 405
