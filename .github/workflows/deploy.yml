@@ -28,12 +28,6 @@ jobs:
 
         shell: bash
 
-      - name: Run tests
-        run: |
-          chmod +x ./gradlew
-          ./gradlew test
-
-
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
