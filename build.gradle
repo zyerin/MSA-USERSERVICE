@@ -46,7 +46,8 @@ dependencies {
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo'
+	// testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo'
+	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.18.0'
 
 
 }
