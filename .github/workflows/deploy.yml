@@ -1,5 +1,6 @@
 name: CI/CD for User-Service
 
+# 동작 조건 설정 : main 브랜치에 push 혹은 pull request가 발생할 경우 동작
 on:
   pull_request:
     types:
@@ -24,29 +25,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3-1. application.yml 생성
+      # 3. application.yml 생성
       - name: Create application.yml
         run: |
           mkdir ./src/main/resources || true
           cd ./src/main/resources
-          rm -rf ./application.yml || true
-          echo "${{ secrets.APPLICATION_PROPERTIES }}" | base64 --decode > ./application.yml
-        shell: bash
-
-      # 3-2. test application.yml 생성
-      - name: Create application.yml
-        run: |
-          mkdir ./src/test/resources || true
-          cd ./src/test/resources
-          rm -rf ./application.yml || true
-          echo "${{ secrets.APPLICATION_YML_TEST }}" | base64 --decode > ./application.yml
+          rm -rf ./application.properties || true
+          echo "${{ secrets.APPLICATION_YML }}" | base64 --decode  > ./application.yml
         shell: bash
 
       # 4. Gradle로 Spring Boot 빌드
       - name: Build Spring Boot Application
         run: |
           chmod +x ./gradlew
-          ./gradlew clean test --info
           ./gradlew clean build -x test
 
       # 5. Docker 이미지 빌드
@@ -64,8 +55,8 @@ jobs:
       - name: Push Docker Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
 
-      # 8. 무중단 배포: Rolling Deployment 구현
-      - name: Rolling Deployment for User-Service
+      # 8. 배포 자동화: DockerHub에서 이미지 가져와 EC2에서 배포
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -78,18 +69,13 @@ jobs:
             # 최신 user-service 이미지 가져오기
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
             
-            echo "Starting Rolling Deployment for user-service..."
+            echo "Restarting user-service containers..."
             
-            # 1. 첫 번째 복제본 업데이트 (2번 복제본 유지)
-            echo "Updating the first replica..."
-            docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=1
-            docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
-            sleep 10 # 대기 시간 (필요에 따라 조정)
-            echo "First replica updated."
+            # user-service 컨테이너 삭제
+            docker-compose -f /home/ubuntu/docker-compose.yml rm -fs user-service
             
-            # 2. 두 번째 복제본 업데이트 (1번 복제본 유지)
-            echo "Updating the second replica..."
-            docker-compose -f /home/ubuntu/docker-compose.yml scale user-service=2
+            # user-service 컨테이너만 다시 실행
             docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service
-            sleep 10 # 대기 시간 (필요에 따라 조정)
-            echo "Second replica updated."
+            # docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service | grep -i "error"
+            
+            echo "user-service successfully deployed."
