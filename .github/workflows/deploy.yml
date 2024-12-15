@@ -49,25 +49,23 @@ jobs:
           script: |
             echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
-            
+
             echo "Marking the first instance as DOWN"
-            INSTANCE=$(curl -s http://service-discovery:8761/eureka/apps/USER-SERVICE | jq -r '.application.instance[0].ipAddr + ":" + .application.instance[0].port')
-            curl -X PATCH http://$INSTANCE/actuator/down
+            curl -X PATCH http://ubuntu-user-service-1:8081/actuator/down
 
             echo "Updating the first instance..."
             docker-compose -f /home/ubuntu/docker-compose.yml rm -fs user-service-1
             docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service-1
             echo "Marking the first instance as UP"
-            curl -X PATCH http://$INSTANCE1/actuator/up
+            curl -X PATCH http://ubuntu-user-service-1:8081/actuator/up
 
             echo "Marking the second instance as DOWN"
-            INSTANCE=$(curl -s http://service-discovery:8761/eureka/apps/USER-SERVICE | jq -r '.application.instance[1].ipAddr + ":" + .application.instance[1].port')
-            curl -X PATCH http://$INSTANCE/actuator/down
+            curl -X PATCH http://ubuntu-user-service-1:8081/actuator/down
 
             echo "Updating the second instance..."
             docker-compose -f /home/ubuntu/docker-compose.yml rm -fs user-service-2
             docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service-2
             echo "Marking the second instance as UP"
-            curl -X PATCH http://$INSTANCE1/actuator/up
+            curl -X PATCH http://ubuntu-user-service-1:8081/actuator/up
 
             sudo docker image prune -f
