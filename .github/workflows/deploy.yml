@@ -39,21 +39,6 @@ jobs:
           docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/${{secrets.DOCKER_REPOSITORY}}:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
 
-#      - name: Deploy to server
-#        uses: appleboy/ssh-action@v1.0.3
-#        with:
-#          host: ${{ secrets.EC2_HOST }}
-#          username: ${{ secrets.EC2_USERNAME }}
-#          key: ${{ secrets.EC2_PRIVATE_KEY }}
-#          script_stop: true
-#          script: |
-#            echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-#            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:userservice
-#            cd /home/ubuntu/config
-#            sudo docker-compose rm -fs user-service
-#            sudo docker-compose up -d user-service
-#            sudo docker image prune -f
-
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -64,30 +49,25 @@ jobs:
           script: |
             echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
-
-#            Step 1: 첫 번째 인스턴스를 제외
+            
             echo "Marking the first instance as DOWN"
             INSTANCE=$(curl -s http://service-discovery:8761/eureka/apps/USER-SERVICE | jq -r '.application.instance[0].ipAddr + ":" + .application.instance[0].port')
             curl -X PATCH http://$INSTANCE/actuator/down
 
-#            Step 2: 첫 번째 인스턴스 업데이트
             echo "Updating the first instance..."
             docker-compose -f /home/ubuntu/docker-compose.yml rm -fs user-service-1
             docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service-1
             echo "Marking the first instance as UP"
             curl -X PATCH http://$INSTANCE1/actuator/up
 
-#            Step 3: 두 번째 인스턴스를 제외
             echo "Marking the second instance as DOWN"
             INSTANCE=$(curl -s http://service-discovery:8761/eureka/apps/USER-SERVICE | jq -r '.application.instance[1].ipAddr + ":" + .application.instance[1].port')
             curl -X PATCH http://$INSTANCE/actuator/down
 
-#            Step 4: 두 번째 인스턴스 업데이트
             echo "Updating the second instance..."
             docker-compose -f /home/ubuntu/docker-compose.yml rm -fs user-service-2
             docker-compose -f /home/ubuntu/docker-compose.yml up -d user-service-2
             echo "Marking the second instance as UP"
             curl -X PATCH http://$INSTANCE1/actuator/up
 
-#            Clean up unused images
             sudo docker image prune -f
